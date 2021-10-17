@@ -133,4 +133,3 @@ class Timeslot(object):
 # ru2 = 1
 # print(Timeslot2.num_user_inTimeSlot(s2,ru2))
 # print(Timeslot2.pandata_TimeSlot())
-#hello world

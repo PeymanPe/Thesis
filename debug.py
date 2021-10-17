@@ -4,6 +4,7 @@ import math
 from frame import Frame
 from Delay2 import Ceq
 import matplotlib.pyplot as plt
+from Time_Slot import Timeslot
 
 
 
@@ -132,39 +133,7 @@ def Cj_calculate(p, n_subcar,user):
 
     return c_arr
 
-#maximum number of time slot in service number s for transmiting
-def numslut_max(p,ru,s,Nsc):
-    kk = oo.groupby(['serviceNo','RU']).agg('max')
-    kk2=kk.unstack()
-    file3=kk2.loc['s'+ str(s)]
-    # print(file3)
-    Nslot = np.zeros(ru)
 
-    oo_user = oo.groupby(['serviceNo','RU']).size().unstack()
-    oo_user2 = oo_user.loc['s'+ str(s)]
-    # Nsc_user
-    for i in range(ru):
-        Nsc_user = math.floor(Nsc /oo_user2[i])
-        Nslot[i] = math.ceil(file3[i]*1000*8 / (Nsc_user * nmod*7))
-
-    return Nslot
-
-#minmum number of time slot in service number s for transmiting
-def numslut_min(p,ru,s,Nsc):
-    kk = oo.groupby(['serviceNo','RU']).agg('min')
-    kk2=kk.unstack()
-    file3=kk2.loc['s'+ str(s)]
-    # print(file3)
-    Nslot = np.zeros(ru)
-
-    oo_user = oo.groupby(['serviceNo','RU']).size().unstack()
-    oo_user2 = oo_user.loc['s'+ str(s)]
-    # Nsc_user
-    for i in range(ru):
-        Nsc_user = math.floor(Nsc /oo_user2[i])
-        Nslot[i] = math.ceil(file3[i]*1000*8 / (Nsc_user * nmod*7))
-
-    return Nslot
 
 
 
@@ -274,57 +243,21 @@ for i in range(len(x1)):
 
 
 
-print(numslut_max(p,ru,s,Nsc))
-
-
-
-
-
-oo_user = oo.groupby(['serviceNo', 'RU']).size().unstack()
-oo_user2 = oo_user.loc['s' + str(s)]
-
 NscS =np.array([1,1,1])*n_subcar_max
 
 
-## oo_new has a colum showing the number of requires time slot
-oo_new = oo.copy()
-oo_new['num_user'] = oo_new.apply(lambda x:  oo_user.loc[x['serviceNo']][x['RU']] ,axis=1)
-oo_new['ser'] = oo_new.apply(lambda x:  int(x['serviceNo'].replace('s', '')),axis=1)
-oo_new['subcar_user'] = oo_new.apply(lambda x:  math.floor(NscS[x['ser']]/x['num_user']),axis=1)
-oo_new['num_slot'] = oo_new.apply(lambda x:  math.ceil(x['FileSize']*1000*8/(x['subcar_user'] * nmod * 7)),axis=1)
-
-oo_new2=oo_new.groupby(['serviceNo','RU','num_slot']).size()
-
-print(oo_new)
-
-
-def num_user_inTimeSlot(s2,ru2):
-
-    jj=oo_new2.loc['s'+ str(s2),'ru'+ str(ru)].index
-    jj2=np.sort(jj)
-    jj3=jj2[::-1]
-
-
-    num_slot_s_ru = np.zeros(numslut_max(p,ru,s2,Nsc).astype(int)[ru2-1])
 
 
 
 
-    for i in range(len(num_slot_s_ru)):
-        if i < numslut_min(p,ru,s2,Nsc)[ru2-1]:
-            oo_select = oo_new[(oo_new.serviceNo == 's' + str(s2)) & (oo_new.RU == 'ru' + str(ru2))]
-            num_slot_s_ru[i] = oo_select.shape[0]
-        else:
-            oo_select = oo_new[(oo_new.serviceNo == 's' + str(s2)) & (oo_new.RU == 'ru' + str(ru2)) & (oo_new.num_slot > i)]
-            num_slot_s_ru[i] = oo_select.shape[0]
+frame = Frame(0,True, 20)
+Nsc = 12 * frame.Maxnprb()
 
-    # print(num_slot_s_ru)
-    return num_slot_s_ru
+Timeslot2 = Timeslot(frame,Nsc,oo, nmod)
+print(Timeslot2.numslut_max(2))
 
 
 s2 = 1
 ru2 = 1
-print(num_user_inTimeSlot(s2,ru2))
-
-
-print(numslut_max(p,ru,s2,Nsc))
+print(Timeslot2.num_user_inTimeSlot(s2,ru2))
+print(Timeslot2.pandata_TimeSlot())

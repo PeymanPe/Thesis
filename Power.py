@@ -6,8 +6,7 @@ from Delay2 import Ceq
 import matplotlib.pyplot as plt
 
 
-# number of radio units
-ru = 3
+
 
 powCCminDU = 50
 powCCmaxDU = 1000
@@ -31,6 +30,8 @@ oo2=oo.groupby(['RU','serviceNo']).sum()
 
 oo3=oo2.unstack('serviceNo')
 print(oo3)
+# number of radio units
+ru = oo.RU.value_counts().shape[0]
 
 #Number of CPUs per Cloud Server
 NCPU=2

@@ -3,6 +3,8 @@ import pandas as pd
 import math
 from frame import Frame
 from Delay2 import Ceq
+from Time_Slot import Timeslot
+import matplotlib.pyplot as plt
 
 
 # number of radio units
@@ -29,7 +31,11 @@ oo = pd.read_excel(r'D:\Autonomous Systems\KTH\Thesis\New simulation\Data\Lf.xls
 oo2=oo.groupby(['RU','serviceNo']).sum()
 
 oo3=oo2.unstack('serviceNo')
-print(oo3)
+# print(oo3)
+
+# number of radio units
+ru = oo.RU.value_counts().shape[0]
+
 
 #Number of CPUs per Cloud Server
 NCPU=2
@@ -47,8 +53,20 @@ ceq_CC = Ceq(NCPU,f,Ncores,Nipc)
 ceq_RU = 300
 
 
-#assumption 20Mhz channel miu=0 , FR1
-p = Frame(0,True, 20)
+#Table V values (SISO, 20MHz, 6 BPS/HZ, 64-QAM
+refvalue = np.array([20,6,1,6,1])
+
+# C_i values is calculated here based on specified senario
+
+
+df = pd.read_excel(r'D:\Autonomous Systems\KTH\Thesis\New simulation\Data\table2ref.xlsx')
+dff = df.values
+pd.DataFrame(dff).to_numpy()
+
+#splitting II_D
+split = 9
+
+
 
 
 
@@ -56,7 +74,7 @@ p = Frame(0,True, 20)
 
 
 
-def Cj_calculate(p, n_subcar,C_percent):
+def Cj_calculate(p, n_subcar,user):
     # number of radio units
     ru = 4
     BW = (n_subcar * p.subcarSpace)/1000
@@ -125,10 +143,10 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
     file3=kk2.loc['s'+ str(s)]
 
     oo_user = oo.groupby(['serviceNo','RU']).size().unstack()
-    oo_user2 = oo_user.loc['s1']
-    Nsc_user = Nsc / oo_user2[ru]
+    oo_user2 = oo_user.loc['s' + str(s)]
+    # Nsc_user = Nsc / oo_user2[ru]
 
-    Nslot = math.ceil(file3[ru]*1000 / (Nsc_user* nmod*7))
+    # Nslot = math.ceil(file3[ru]*1000 / (Nsc_user* nmod*7))
 
 
 
@@ -146,13 +164,36 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
     powRU = np.zeros(ru)
     powRU_DU = np.zeros(ru)
 
+    UFru = np.zeros(ru)
 
+    Timeslot2 = Timeslot(frame, Nsc, oo, nmod)
 
+    data = Timeslot2.pandata_TimeSlot()
+
+    C_RU_sum = np.zeros(2)
     for i in range(ru):
+        for j in range(p.numslot_frame):
 
-        UFru[i] = (cj_RU_CP * d_RU + cj_RU_UP * d_RU2)/(ceq_RU * 10 * C_percent)
+            data2 = data[(data.RU=='ru'+str(i+1)) & (data.serviceNo=='s'+str(s))]
+            data3=np.array(data2.iloc[:,2:],dtype=int)[0]
+            NS= (Nsc[i,s-1]*data3[j])/data3[0]
+
+            if NS !=0:
+                C_arr_new = Cj_calculate(p, NS, data3[j])
+                C_RU_sum += np.array(C_arr_new[0], C_arr_new[1] * data3[j])
+
+
+
+        # c_arr = Cj_calculate(p, Nsc[i,s-1], oo_user2[i])
+        UFru[i] = (C_RU_sum[0] + C_RU_sum[1]) / (ceq_RU * C_percent * p.numslot_frame)
+
         powRU_DU[i] = powRUminDU + (powRUmaxDU - powRUminDU) * UFru[i]
-        powRU[i]=powRU_indep + powRU_tx * Nsc + powRU_DU[i]
+        sum3 = Timeslot2.sum_num_user_slot(s, i+1)
+
+        #I need update the equation in overleaf
+        powRU[i] = powRU_indep + powRU_tx * Nsc[i,s-1] *(sum3/(p.numslot_frame * oo_user2[i]))+ powRU_DU[i]
+
+
 
     #power in switches
     Lftot = 0
@@ -161,25 +202,91 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
             Lftot += oo3.loc['ru'+str(i+1)][j]
 
 
+    c_arr2= np.zeros(2)
+
+    for i in range(ru):
+        for j in range(p.numslot_frame):
+
+            data2 = data[(data.RU=='ru'+str(i+1)) & (data.serviceNo=='s'+str(s))]
+            data3 = np.array(data2.iloc[:,2:],dtype=int)[0]
+            NS= (Nsc[i,s-1]*data3[j])/data3[0]
+
+            if NS !=0:
+                C_arr_new = Cj_calculate(p, NS, data3[j])
+                c_arr2 += np.array(C_arr_new[2], C_arr_new[3] * data3[j])
+
+
+
+
+
+
     #power consumed for processiunf
-    UFcc = (cj_CC_CP * d_CC + cj_CC_UP * d_CC2) / (ceq_CC * 10 * C_percent)
+    UFcc = (c_arr2[0] + c_arr2[1] ) / (ceq_CC * C_percent * p.numslot_frame)
+    # UFcc = (cj_CC_CP * d_CC + cj_CC_UP * d_CC2) / (ceq_CC * 10 * C_percent)
     powCCDU = powCCminDU + (powCCmaxDU-powCCminDU)*UFcc
 
     powSW = powSWstatic/s + roSW * Lftot
 
-    powCC = powSW+ powCCDU + powCCcool
+    powCC = powSW + powCCDU + powCCcool
 
     powTot = powCC + np.sum(powRU)
 
-    return powTot, powCC, powRU[0]
+    return powTot, powCC, powRU[0], powCCDU, powRU_DU[0]
+
+
+# #assumption 20Mhz channel miu=2 , FR1
+# p = Frame(2,True, 20)
+#
+# s = 1
+# sp=80
+# UFru=np.array([1,1,1,1])
+# UFcc=1
+
+
 
 
 #assumption 20Mhz channel miu=2 , FR1
-p = Frame(2,True, 20)
+frame = Frame(0,True, 20)
+# modulation index =4 16-QAM
+nmod=4
 
+
+Nsc = 12 * frame.Maxnprb()
+Nsc2 = np.ones((4,3)) * Nsc
+
+C_percent = 1
 s = 1
-sp=80
-UFru=np.array([1,1,1,1])
-UFcc=1
+# UFru=np.array([1,1,1,1])
+# UFcc=1
 
-print(powerslice(p,ru,oo,s,sp,UFru,UFcc))
+print(powerslice(frame,ru,oo,s,Nsc2,C_percent))
+
+
+
+
+
+x1 = np.linspace(0.2, 1, num=10)
+
+
+
+y1 = np.empty([len(x1),5])
+for i in range(len(x1)):
+    y1[i,:] = powerslice(frame, ru, oo, s, x1[i]*np.ones((4,3))* Nsc, C_percent)
+    # y1[i,:] = DelayChangeBW(p,x1[i],C_percent)[:-1]
+    # print(x1[i])
+
+
+
+# plt.plot(x1,y1[:,0], 'o-r')
+# plt.plot(x1,y1[:,1], 'o-g')
+# plt.plot(x1,y1[:,2], 'o-c')
+plt.plot(x1,y1[:,3], 'o-y')
+plt.plot(x1,y1[:,4], 'o-k')
+plt.title('Power components for varying allocated bandwidth')
+plt.xlabel("number of subcarriers")
+plt.ylabel("Power")
+plt.legend(('total power', 'power at CC','power at RU','power for processing at CC','power for processing at RU'), loc='upper right', shadow=True)
+
+plt.grid()
+plt.show()
+

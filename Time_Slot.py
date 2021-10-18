@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-# from frame import Frame
+from frame import Frame
 from Delay2 import nmod
 import math
 
@@ -13,9 +13,9 @@ import math
 
 
 class Timeslot(object):
-    def __init__(self,frame,Nsc_slice_share,oo, nmod):
+    def __init__(self,frame,Nsc,oo, nmod):
         self.frame = frame
-        self.Nsc_slice_share = Nsc_slice_share
+        self.Nsc = Nsc
         self.oo = oo
         self.ru = oo.RU.value_counts().shape[0]
         self.s = oo.serviceNo.value_counts().shape[0]
@@ -34,7 +34,7 @@ class Timeslot(object):
         oo_user2 = oo_user.loc['s' + str(s2)]
         # Nsc_user
         for i in range(self.ru):
-            Nsc_user = math.floor(self.Nsc_slice_share / oo_user2[i])
+            Nsc_user = math.floor(self.Nsc[i,s2-1] / oo_user2[i])
             Nslot[i] = math.ceil(file3[i] * 1000 * 8 / (Nsc_user * self.nmod * 7))
 
         return Nslot
@@ -51,7 +51,7 @@ class Timeslot(object):
         oo_user2 = oo_user.loc['s' + str(s2)]
         # Nsc_user
         for i in range(self.ru):
-            Nsc_user = math.floor(self.Nsc_slice_share / oo_user2[i])
+            Nsc_user = math.floor(self.Nsc[i,s2-1] / oo_user2[i])
             Nslot[i] = math.ceil(file3[i] * 1000 * 8 / (Nsc_user * self.nmod * 7))
 
         return Nslot
@@ -59,7 +59,7 @@ class Timeslot(object):
     def num_user_inTimeSlot(self, s2, ru2):
 
         oo_user = self.oo.groupby(['serviceNo', 'RU']).size().unstack()
-        oo_user2 = oo_user.loc['s' + str(s2)]
+        # oo_user2 = oo_user.loc['s' + str(s2)]
 
         ## oo_new has a colum showing the number of requires time slot
 
@@ -68,12 +68,14 @@ class Timeslot(object):
         oo_new = self.oo.copy()
         oo_new['num_user'] = oo_new.apply(lambda x: oo_user.loc[x['serviceNo']][x['RU']], axis=1)
         oo_new['ser'] = oo_new.apply(lambda x: int(x['serviceNo'].replace('s', '')), axis=1)
-        oo_new['subcar_user'] = oo_new.apply(lambda x: math.floor(self.Nsc_slice_share / x['num_user']), axis=1)
+        oo_new['subcar_slice'] = oo_new.apply(lambda x: self.Nsc[int(x['RU'].replace('ru', ''))-1,int(x['serviceNo'].replace('s', ''))-1], axis=1)
+        oo_new['subcar_user'] = oo_new.apply(lambda x: math.floor(x['subcar_slice'] / x['num_user']), axis=1)
 
 
         # oo_new['subcar_user'] = oo_new.apply(lambda x: math.floor(NscS[x['ser']] / x['num_user']), axis=1)
         oo_new['num_slot'] = oo_new.apply(lambda x: math.ceil(x['FileSize'] * 1000 * 8 / (x['subcar_user'] * self.nmod * 7)),
                                           axis=1)
+        # print(oo_new)
 
         oo_new2 = oo_new.groupby(['serviceNo', 'RU', 'num_slot']).size()
 
@@ -116,6 +118,10 @@ class Timeslot(object):
             # df['slot' + str(i + 1)] = i
 
         return df
+    def sum_num_user_slot(self,s2, ru2):
+        sum2 = np.sum(self.num_user_inTimeSlot(s2, ru2))
+
+        return sum2
 
 
 
@@ -124,12 +130,17 @@ class Timeslot(object):
 # oo = pd.read_excel(r'D:\Autonomous Systems\KTH\Thesis\New simulation\Data\Lf.xlsx')
 # frame = Frame(0,True, 20)
 # Nsc = 12 * frame.Maxnprb()
+# Nsc2 = np.ones((4,3)) * Nsc
 #
-# Timeslot2 = Timeslot(frame,Nsc,oo)
-# print(Timeslot2.numslut_max(2,4))
+# #we want to analyze one slice and we dont care about other slices
+# # print(Nsc2)
+#
+# Timeslot2 = Timeslot(frame,Nsc2,oo,4)
+# # print(Timeslot2.numslut_max(2,4))
 #
 #
 # s2 = 1
 # ru2 = 1
-# print(Timeslot2.num_user_inTimeSlot(s2,ru2))
+# # print(Timeslot2.num_user_inTimeSlot(s2,ru2))
+# # print(Timeslot2.sum_num_user_slot(s2, ru2))
 # print(Timeslot2.pandata_TimeSlot())

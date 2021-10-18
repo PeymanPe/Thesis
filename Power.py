@@ -150,9 +150,9 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
     oo_user2 = oo_user.loc['s1']
 
 
-    Nsc_user = Nsc / oo_user2[ru]
+    # Nsc_user = Nsc / oo_user2[ru]
 
-    Nslot = math.ceil(file3[ru]*1000 / (Nsc_user* nmod*7))
+    # Nslot = math.ceil(file3[ru]*1000 / (Nsc_user* nmod*7))
 
 
 
@@ -253,6 +253,27 @@ plt.legend(('total power', 'power at CC','power at RU','power for processing at 
 
 plt.grid()
 plt.show()
+
+
+
+# NscS =np.array([1,1,1])*n_subcar_max
+#
+#
+#
+#
+#
+#
+# frame = Frame(0,True, 20)
+# Nsc = 12 * frame.Maxnprb()
+#
+# Timeslot2 = Timeslot(frame,Nsc,oo, nmod)
+# print(Timeslot2.numslut_max(2))
+
+
+# s2 = 1
+# ru2 = 1
+# print(Timeslot2.num_user_inTimeSlot(s2,ru2))
+# print(Timeslot2.pandata_TimeSlot())
 
 
 

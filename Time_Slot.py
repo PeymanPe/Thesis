@@ -127,20 +127,20 @@ class Timeslot(object):
 
 
 
-# oo = pd.read_excel(r'D:\Autonomous Systems\KTH\Thesis\New simulation\Data\Lf.xlsx')
-# frame = Frame(0,True, 20)
-# Nsc = 12 * frame.Maxnprb()
-# Nsc2 = np.ones((4,3)) * Nsc
-#
-# #we want to analyze one slice and we dont care about other slices
-# # print(Nsc2)
-#
-# Timeslot2 = Timeslot(frame,Nsc2,oo,4)
-# # print(Timeslot2.numslut_max(2,4))
-#
-#
-# s2 = 1
-# ru2 = 1
-# # print(Timeslot2.num_user_inTimeSlot(s2,ru2))
-# # print(Timeslot2.sum_num_user_slot(s2, ru2))
-# print(Timeslot2.pandata_TimeSlot())
+oo = pd.read_excel(r'D:\Autonomous Systems\KTH\Thesis\New simulation\Data\data2.xlsx')
+frame = Frame(0,True, 20)
+Nsc = 12 * frame.Maxnprb()
+Nsc2 = np.ones((4,3)) * Nsc
+
+#we want to analyze one slice and we dont care about other slices
+# print(Nsc2)
+
+Timeslot2 = Timeslot(frame,Nsc2,oo,4)
+# print(Timeslot2.numslut_max(2,4))
+
+
+s2 = 1
+ru2 = 1
+# print(Timeslot2.num_user_inTimeSlot(s2,ru2))
+# print(Timeslot2.sum_num_user_slot(s2, ru2))
+print(Timeslot2.pandata_TimeSlot())

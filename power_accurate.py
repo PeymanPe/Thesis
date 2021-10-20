@@ -7,8 +7,6 @@ from Time_Slot import Timeslot
 import matplotlib.pyplot as plt
 
 
-# number of radio units
-ru = 3
 
 powCCminDU = 10
 powCCmaxDU = 1000
@@ -19,11 +17,11 @@ powRUmaxDU = 200
 
 powCCcool = 5
 powSWstatic =5
-roSW = 5
+roSW = math.pow(10,-6)
 #load independent power consumption at radio unit
 powRU_indep=10
-#required power to transmit 1 subcarrier
-powRU_tx = 10
+#required power to transmit 1 subcarrier =26dBm
+powRU_tx = 0.398
 #total power consumed
 
 
@@ -35,6 +33,9 @@ oo3=oo2.unstack('serviceNo')
 
 # number of radio units
 ru = oo.RU.value_counts().shape[0]
+
+#number of service
+s_num = oo.serviceNo.value_counts().shape[0]
 
 
 #Number of CPUs per Cloud Server
@@ -75,8 +76,8 @@ split = 9
 
 
 def Cj_calculate(p, n_subcar,user):
-    # number of radio units
-    ru = 4
+    # # number of radio units
+    # ru = 4
     BW = (n_subcar * p.subcarSpace)/1000
     n_subcar_user = math.floor(n_subcar/user)
     BW_user = (n_subcar_user * p.subcarSpace)/1000
@@ -170,17 +171,23 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
 
     data = Timeslot2.pandata_TimeSlot()
 
-    C_RU_sum = np.zeros(2)
+
     for i in range(ru):
+        C_RU_sum = np.zeros(2)
         for j in range(p.numslot_frame):
 
             data2 = data[(data.RU=='ru'+str(i+1)) & (data.serviceNo=='s'+str(s))]
             data3=np.array(data2.iloc[:,2:],dtype=int)[0]
+            #We assume the number of allocated subcarriers per user is fixed
+            #data2[j] is the number of users at slot number j
             NS= (Nsc[i,s-1]*data3[j])/data3[0]
+            # print("at Ru {} at time slot {} Ns ={}".format(i+1,j+1,NS))
 
             if NS !=0:
                 C_arr_new = Cj_calculate(p, NS, data3[j])
-                C_RU_sum += np.array(C_arr_new[0], C_arr_new[1] * data3[j])
+                C_RU_sum += np.array([C_arr_new[0], C_arr_new[1] * data3[j]])
+                # print(C_arr_new)
+                # print(C_RU_sum)
 
 
 
@@ -191,7 +198,7 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
         sum3 = Timeslot2.sum_num_user_slot(s, i+1)
 
         #I need update the equation in overleaf
-        powRU[i] = powRU_indep + powRU_tx * Nsc[i,s-1] *(sum3/(p.numslot_frame * oo_user2[i]))+ powRU_DU[i]
+        powRU[i] = powRU_indep/s_num + powRU_tx * Nsc[i,s-1] *(sum3/(p.numslot_frame * oo_user2[i]))+ powRU_DU[i]
 
 
 
@@ -210,10 +217,13 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
             data2 = data[(data.RU=='ru'+str(i+1)) & (data.serviceNo=='s'+str(s))]
             data3 = np.array(data2.iloc[:,2:],dtype=int)[0]
             NS= (Nsc[i,s-1]*data3[j])/data3[0]
+            # print("at Ru {} at time slot {} Ns ={}".format(i + 1, j + 1, NS))
 
             if NS !=0:
                 C_arr_new = Cj_calculate(p, NS, data3[j])
-                c_arr2 += np.array(C_arr_new[2], C_arr_new[3] * data3[j])
+                c_arr2 += np.array([C_arr_new[2], C_arr_new[3] * data3[j]])
+                # print(C_arr_new)
+                # print(c_arr2)
 
 
 
@@ -225,22 +235,16 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
     # UFcc = (cj_CC_CP * d_CC + cj_CC_UP * d_CC2) / (ceq_CC * 10 * C_percent)
     powCCDU = powCCminDU + (powCCmaxDU-powCCminDU)*UFcc
 
-    powSW = powSWstatic/s + roSW * Lftot
+    powSW = powSWstatic/s_num + roSW * Lftot
 
-    powCC = powSW + powCCDU + powCCcool
+    powCC = powSW + powCCDU + (powCCcool/s_num)
+
 
     powTot = powCC + np.sum(powRU)
 
     return powTot, powCC, powRU[0], powCCDU, powRU_DU[0]
 
 
-# #assumption 20Mhz channel miu=2 , FR1
-# p = Frame(2,True, 20)
-#
-# s = 1
-# sp=80
-# UFru=np.array([1,1,1,1])
-# UFcc=1
 
 
 
@@ -256,10 +260,14 @@ Nsc2 = np.ones((4,3)) * Nsc
 
 C_percent = 1
 s = 1
-# UFru=np.array([1,1,1,1])
-# UFcc=1
+
 
 print(powerslice(frame,ru,oo,s,Nsc2,C_percent))
+
+
+
+
+
 
 
 
@@ -275,17 +283,17 @@ for i in range(len(x1)):
     # y1[i,:] = DelayChangeBW(p,x1[i],C_percent)[:-1]
     # print(x1[i])
 
+x2=np.array(["{:.0%}".format(i) for i in x1])
 
-
-# plt.plot(x1,y1[:,0], 'o-r')
-# plt.plot(x1,y1[:,1], 'o-g')
-# plt.plot(x1,y1[:,2], 'o-c')
-plt.plot(x1,y1[:,3], 'o-y')
-plt.plot(x1,y1[:,4], 'o-k')
-plt.title('Power components for varying allocated bandwidth')
-plt.xlabel("number of subcarriers")
-plt.ylabel("Power")
-plt.legend(('total power', 'power at CC','power at RU','power for processing at CC','power for processing at RU'), loc='upper right', shadow=True)
+plt.plot(x2,y1[:,0], 'o-r')
+plt.plot(x2,y1[:,1], 'o-g')
+plt.plot(x2,y1[:,2], 'o-c')
+plt.plot(x2,y1[:,3], 'o-y')
+plt.plot(x2,y1[:,4], 'o-k')
+plt.title('slice_Power components for varying allocated bandwidth')
+plt.xlabel("Percentage of allocated BW for a slice")
+plt.ylabel("Power (W)")
+plt.legend(('total power', 'power at CC','power at RU','power for processing at CC','power for processing at RU'), loc='upper left', shadow=True)
 
 plt.grid()
 plt.show()

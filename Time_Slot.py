@@ -6,7 +6,7 @@ import math
 
 
 
-
+#we assume slicing time for all services is equal
 
 
 
@@ -55,6 +55,15 @@ class Timeslot(object):
             Nslot[i] = math.ceil(file3[i] * 1000 * 8 / (Nsc_user * self.nmod * 7))
 
         return Nslot
+    def total_numslut_max(self):
+        maxi=0
+        for i in range(self.s):
+            if np.amax(self.numslut_max(i+1)) > maxi:
+                maxi = np.amax(self.numslut_max(i+1))
+            else:
+                continue
+        return maxi
+
 
     def num_user_inTimeSlot(self, s2, ru2):
 
@@ -136,7 +145,7 @@ Nsc2 = np.ones((4,3)) * Nsc
 # print(Nsc2)
 
 Timeslot2 = Timeslot(frame,Nsc2,oo,4)
-# print(Timeslot2.numslut_max(2,4))
+print(Timeslot2.total_numslut_max())
 
 
 s2 = 1
@@ -144,3 +153,4 @@ ru2 = 1
 # print(Timeslot2.num_user_inTimeSlot(s2,ru2))
 # print(Timeslot2.sum_num_user_slot(s2, ru2))
 print(Timeslot2.pandata_TimeSlot())
+

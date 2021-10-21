@@ -198,6 +198,7 @@ def powerslice(p,ru,oo,s,Nsc,C_percent):
         sum3 = Timeslot2.sum_num_user_slot(s, i+1)
 
         #I need update the equation in overleaf
+
         powRU[i] = powRU_indep/s_num + powRU_tx * Nsc[i,s-1] *(sum3/(p.numslot_frame * oo_user2[i]))+ powRU_DU[i]
 
 
@@ -279,7 +280,8 @@ x1 = np.linspace(0.2, 1, num=10)
 
 y1 = np.empty([len(x1),5])
 for i in range(len(x1)):
-    y1[i,:] = powerslice(frame, ru, oo, s, x1[i]*np.ones((4,3))* Nsc, C_percent)
+    xc = math.floor(x1[i] * Nsc)
+    y1[i,:] = powerslice(frame, ru, oo, s, np.ones((4,3)) * xc, C_percent)
     # y1[i,:] = DelayChangeBW(p,x1[i],C_percent)[:-1]
     # print(x1[i])
 

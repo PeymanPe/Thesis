@@ -81,13 +81,13 @@ def Dtot(Lf, packetsize, SwitchBitRate, Nsc, nre, nmod, Tslot, cj, cRUEq, cCCEq,
     # Transmission delay (unit:microsecond)
     DMtx = Lf / MHbitRate1
 
-    Nsc_user = Nsc/user
+    Nsc_user = math.floor(Nsc/user)
 
     nprb = Nsc/12
 
-    nprb2 = nprb.copy()
+    # nprb2 = nprb.copy()
 
-    nprb2/=user
+    # nprb2/=user
 
     # Equation 5 (unitless)
 
@@ -145,6 +145,8 @@ def Dtot(Lf, packetsize, SwitchBitRate, Nsc, nre, nmod, Tslot, cj, cRUEq, cCCEq,
         C_i_RU_CP = np.sum(cj[:split])
         C_i_CC_CP = cj[-6]
         C_i_CC_UP = np.sum(cj[-5:])
+        # print("C_i_CC_CP = {}".format(C_i_CC_CP))
+        # print("C_i_CC_UP = {}".format(C_i_CC_UP))
         n1 = 1
         n2 = 1
         # Equation 7 (unit miliseconds)
@@ -189,6 +191,8 @@ def Dtot(Lf, packetsize, SwitchBitRate, Nsc, nre, nmod, Tslot, cj, cRUEq, cCCEq,
              Dp2 * 0.001
 
     return dRUpr, dCCpr, Dpr , Dtot, DRtx
+    #Process delay simulation in process_Delay.py
+    # return dCCpr, dRUpr, Dpr
 
 
 # file size 100kb

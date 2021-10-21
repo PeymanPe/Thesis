@@ -167,12 +167,40 @@ for i in range(len(x1)):
     # print(x1[i])
 
 ddf = pd.DataFrame(y1)
+
 print(n_subcar_max)
 print(ddf)
-plt.title('Total delay with variation of allocated bandwidth and DUs')
-plt.xlabel("percentage of allocated DUs")
-plt.ylabel("number of subcarriers")
+# plt.title('Total delay with variation of allocated bandwidth and DUs')
+# plt.xlabel("percentage of allocated DUs")
+# plt.ylabel("number of subcarriers")
 
-ax = sns.heatmap(ddf)
+# ax = sns.heatmap(ddf)
+
+# plt.show()
+
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+
+
+
+x_axis_labels =["{:.0%}".format(i) for i in x1]
+y_axis_labels = ["{:.0%}".format(i) for i in x2]
+
+# create seabvorn heatmap with required labels
+ax = sns.heatmap(ddf, xticklabels=x_axis_labels, yticklabels=y_axis_labels)
+
+
+
+# ax = sns.heatmap(ddf)
+
+ax.set_title(
+    "Total delay with variation of allocated bandwidth and DUs for a slice, miu=0 File size=0.5 KB with slice containing 5 users")
+
+ax.set(xlabel='percentage of allocated DUs for a slice', ylabel='number of subcarriers allocated for a slice')
+
+
+
+
 
 plt.show()
